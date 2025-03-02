@@ -5,12 +5,15 @@ import user from "../models/user.js";
 
 export const clerkWebhooks = async (req, res) => {
   try {
+    // logging req,res
+    console.log("Received Webhook Request:", req.body);
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
     await whook.verify(JSON.stringify(req.body), {
       "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
     });
+    console.log("Webhook verified successfully");
     const { data, type } = req.body;
     switch (type) {
       case "user.created": {
@@ -21,7 +24,7 @@ export const clerkWebhooks = async (req, res) => {
           imageUrl: data.image_url,
         };
         await user.create(userData);
-        res.json({});
+        res.json({ success: true, message: "User created" });
         break;
       }
       case "user.updated": {
@@ -42,7 +45,7 @@ export const clerkWebhooks = async (req, res) => {
       default:
         break;
     }
-  } catch (error) {
-    res.json({ success: false, message: error.message });
+  } catch (dbError) {
+    res.json({ success: false, message: dbError.message });
   }
 };
